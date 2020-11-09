@@ -215,8 +215,11 @@ class FFNN:
     def forward_pass(self, input_data: np.array)-> np.array:
         # TODO: perform the whole forward pass using the on_step_forward function
         self.layers[0].Z = input_data 
-        return reduce(self.one_step_forward,[input_data]+self.layers[1:])
-        
+        for i in range(1,self.nlayers):
+          signal = self.layers[i-1].Z
+          cur_layer = self.layers[i]
+          _=self. one_step_forward(signal,cur_layer)
+        return self.layers[-1].Z
     
     def one_step_backward(self, prev_layer: Layer, cur_layer: Layer)-> Layer:
         # TODO: Compute the D matrix of the current layer using the previous layer and return the current layer
@@ -237,15 +240,21 @@ class FFNN:
         return next_layer
     
     def update_all_weights(self)-> None:
-        # TODO: Update all W matrix using the update_weights function
-        reduce(self.update_weights,self.layers)     
+        # TODO: Update all W matrix using the update_weights function 
+        for i in range(0,len(self.layers)-1):
+          cur_layer=self.layers[i]
+          next_layer=self.layers[i+1]
+          _=self.update_weights(cur_layer, next_layer)
+           
         
     def get_error(self, y_pred: np.array, y_batch: np.array)-> float:
         # TODO: return the accuracy on the predictions
         # the accuracy should be in the [0.0, 1.0] range
-        predict = np.argmax(y_pred, axis=1)
+        predict = np.argmax(y_pred,axis=1)
         true_predict = np.argmax(y_batch, axis=1)
-        return (predict == true_predict).sum() / y_pred.shape[0]
+        somme = (predict==true_predict).sum() / y_pred.shape[0]  
+        return somme
+        
     
     def get_test_error(self, X: np.array, y: np.array)-> float:
         # TODO: Compute the accuracy using the get_error function
@@ -297,11 +306,12 @@ It's on 12 points because there is a lot of functions to fill but also we want t
 To have all the point your neural network needs to have a Test accuracy > 92 % !!
 """
 
-minibatch_size = 5 
-nepoch = 10
-learning_rate = 0.01
+minibatch_size = 10
+nepoch = 5
+learning_rate = 0.1
 
-ffnn = FFNN(config=[784, 3, 3, 10], minibatch_size=minibatch_size, learning_rate=learning_rate)
+
+ffnn = FFNN(config=[784,70,70,10], minibatch_size=minibatch_size, learning_rate=learning_rate)
 
 assert X_train.shape[0] % minibatch_size == 0
 assert X_test.shape[0] % minibatch_size == 0
@@ -331,11 +341,12 @@ true_target = np.argmax(y_true[index_to_plot,:])
 
 # loop arround the demo test set and try to find a miss prediction
 for i in range(0, nsample):   
-    prediction = None # Todo
-    true_target = None # Todo
+    miss_pred=0
+    prediction = np.argmax(y_demo[i]) # Todo
+    true_target = np.argmax(y_true[i]) # Todo
     if prediction != true_target:
-        # TODO
-      pass
+       miss_pred+=1     
+print (miss_pred)
 
 """## Open analysis
 
@@ -353,3 +364,7 @@ Also explain how the neural network behave when changing them ?
 TODO
 """
 
+#jai choisit le minibatch_size 10 pour tout en respectant les paramètre pour eviter un overflow
+#avec le nepoch, je decide combien de fois je vais tester l'algo, je peux le varier en convenance pour verifier l'efficacité de mon algo
+#le 2eme et 3eme paramatre de config répresente mes poids, j'ai modifié ces valeurs ce qui me permet une adpatation de mon algo
+#jai choisit un learning_rate pour que mon modèle s'adapte rapidement au problème
